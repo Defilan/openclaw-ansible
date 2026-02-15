@@ -1,0 +1,13 @@
+---
+# tasks/main.yml — openclaw_maintain role
+#
+# Orchestrates maintenance automation for OpenClaw on macOS.
+# Sub-task files are imported in order:
+#   1. Health checks (on-demand diagnostics + scheduled launchd job)
+#   2. Backups (backup script, launchd schedule, Google Drive sync)
+
+- name: Configure health check diagnostics and scheduling
+  ansible.builtin.import_tasks: health_check.yml
+
+- name: Configure backup automation and Google Drive sync
+  ansible.builtin.import_tasks: backup.yml

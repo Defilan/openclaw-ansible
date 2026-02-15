@@ -1,0 +1,27 @@
+---
+# tasks/firewall.yml — macos_base role
+#
+# Configures the macOS Application Firewall (socketfilterfw).
+# Changes take effect immediately; no restart is required.
+
+- name: Enable macOS Application Firewall
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
+  become: true
+  when: macos_enable_firewall
+  register: firewall_enable_result
+  changed_when: "'already enabled' not in firewall_enable_result.stdout"
+  tags:
+    - base
+    - firewall
+
+- name: Enable firewall stealth mode
+  ansible.builtin.command:
+    cmd: /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
+  become: true
+  when: macos_firewall_stealth_mode
+  register: stealth_mode_result
+  changed_when: "'already enabled' not in stealth_mode_result.stdout"
+  tags:
+    - base
+    - firewall

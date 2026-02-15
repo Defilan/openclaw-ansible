@@ -1,0 +1,60 @@
+---
+# tasks/clone.yml — openclaw_deploy role
+#
+# Ensures Colima (headless Docker runtime) is running on macOS, then clones
+# the OpenClaw repository to the installation directory.
+
+- name: Check if Docker (via Colima) is running
+  ansible.builtin.command:
+    cmd: docker info
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: docker_info_check
+  failed_when: false
+  changed_when: false
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+
+- name: Start Colima if Docker is not running
+  ansible.builtin.command:
+    cmd: >-
+      colima start
+      --cpu {{ colima_cpu }}
+      --memory {{ colima_memory }}
+      --disk {{ colima_disk }}
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: docker_info_check.rc != 0
+  changed_when: true
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+
+- name: Wait for Docker to become ready
+  ansible.builtin.command:
+    cmd: docker info
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: docker_ready
+  retries: 10
+  delay: 5
+  until: docker_ready.rc == 0
+  changed_when: false
+  when: docker_info_check.rc != 0
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+
+- name: Clone the OpenClaw repository
+  ansible.builtin.git:
+    repo: "{{ openclaw_repo_url }}"
+    dest: "{{ openclaw_install_dir }}"
+    version: "{{ openclaw_version }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - deploy

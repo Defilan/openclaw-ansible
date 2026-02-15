@@ -1,0 +1,131 @@
+---
+# tasks/main.yml — homebrew role
+#
+# Installs Homebrew on Apple Silicon macOS and manages formulae and casks.
+# The prefix directory is created as root (since the openclaw user is a
+# Standard non-admin account without sudo), then Homebrew is cloned and
+# owned by the openclaw user for all subsequent operations.
+
+- name: Check if Homebrew is already installed
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_binary
+  tags:
+    - homebrew
+
+- name: Create Homebrew prefix directory
+  ansible.builtin.file:
+    path: /opt/homebrew
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: staff
+    mode: "0755"
+  become: true
+  when: not homebrew_binary.stat.exists
+  tags:
+    - homebrew
+
+- name: Clone Homebrew into prefix
+  ansible.builtin.git:
+    repo: https://github.com/Homebrew/brew.git
+    dest: /opt/homebrew
+    version: master
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: not homebrew_binary.stat.exists
+  tags:
+    - homebrew
+
+- name: Create Homebrew support directories
+  ansible.builtin.file:
+    path: "/opt/homebrew/{{ item }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: staff
+    mode: "0755"
+  loop:
+    - Caskroom
+    - Cellar
+    - Frameworks
+    - etc
+    - include
+    - lib
+    - opt
+    - sbin
+    - share
+    - var
+  become: true
+  when: not homebrew_binary.stat.exists
+  tags:
+    - homebrew
+
+- name: Run brew update to finish setup
+  ansible.builtin.command:
+    cmd: /opt/homebrew/bin/brew update
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: not homebrew_binary.stat.exists
+  changed_when: true
+  tags:
+    - homebrew
+
+- name: Ensure Homebrew is on PATH in ~/.zprofile
+  ansible.builtin.lineinfile:
+    path: "{{ openclaw_user_home }}/.zprofile"
+    line: 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+    create: true
+    state: present
+    owner: "{{ openclaw_user }}"
+    mode: "0644"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - homebrew
+
+- name: Install Homebrew formulae
+  community.general.homebrew:
+    name: "{{ homebrew_formulae }}"
+    state: present
+    path: "{{ homebrew_path }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - homebrew
+
+- name: Create Docker CLI plugins directory
+  ansible.builtin.file:
+    path: "{{ openclaw_user_home }}/.docker/cli-plugins"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: staff
+    mode: "0755"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - homebrew
+
+- name: Symlink docker-compose as Docker CLI plugin
+  ansible.builtin.file:
+    src: "{{ homebrew_path }}/docker-compose"
+    dest: "{{ openclaw_user_home }}/.docker/cli-plugins/docker-compose"
+    state: link
+    owner: "{{ openclaw_user }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - homebrew
+
+- name: Install Homebrew casks
+  community.general.homebrew_cask:
+    name: "{{ homebrew_casks }}"
+    state: present
+    path: "{{ homebrew_path }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  when: homebrew_casks | default([]) | length > 0
+  tags:
+    - homebrew

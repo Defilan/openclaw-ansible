@@ -1,0 +1,21 @@
+---
+# tasks/main.yml — openclaw_harden role
+#
+# Orchestrates all security hardening for an already-deployed OpenClaw
+# instance on macOS.  Sub-task files are imported in order:
+#   1. Read-merge-write the openclaw.json configuration
+#   2. Ensure the sandbox Docker image is available
+#   3. Lock down file permissions on config and credential files
+#   4. Template the .env file and set environment variables
+
+- name: Apply hardened OpenClaw configuration (read-merge-write)
+  ansible.builtin.import_tasks: config.yml
+
+- name: Ensure sandbox Docker image is available
+  ansible.builtin.import_tasks: sandbox.yml
+
+- name: Lock down file and directory permissions
+  ansible.builtin.import_tasks: permissions.yml
+
+- name: Template environment file and shell variables
+  ansible.builtin.import_tasks: env_file.yml

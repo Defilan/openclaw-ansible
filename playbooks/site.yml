@@ -1,0 +1,16 @@
+---
+# =============================================================================
+# OpenClaw Full Setup - Master Playbook
+# =============================================================================
+# Runs all phases in sequence: setup, harden, configure, maintain.
+#
+# Usage:
+#   ansible-playbook playbooks/site.yml --ask-vault-pass --ask-become-pass
+#
+# This is the "do everything" playbook for initial provisioning.
+# For subsequent runs, prefer using the individual playbooks.
+
+- import_playbook: setup.yml
+- import_playbook: harden.yml
+- import_playbook: configure.yml
+- import_playbook: maintain.yml

@@ -1,0 +1,22 @@
+---
+# meta/main.yml — homebrew role
+
+galaxy_info:
+  author: defilan
+  description: >-
+    Installs Homebrew and manages formulae and casks on a macOS
+    (Apple Silicon) Mac Mini for the OpenClaw project.
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+
+  galaxy_tags:
+    - macos
+    - homebrew
+    - packages
+
+dependencies: []

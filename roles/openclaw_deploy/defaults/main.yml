@@ -1,0 +1,21 @@
+---
+# defaults/main.yml — openclaw_deploy role
+#
+# Default variables for cloning, building, and starting OpenClaw.
+# Override these in host_vars / group_vars or at the playbook level.
+
+# Git repository settings
+openclaw_repo_url: "https://github.com/openclaw/openclaw.git"
+openclaw_version: "main"
+
+# Filesystem paths
+openclaw_install_dir: "/Users/{{ openclaw_user }}/openclaw"
+openclaw_config_dir: "/Users/{{ openclaw_user }}/.openclaw"
+
+# Colima VM resources (headless Docker runtime for macOS)
+colima_cpu: 2
+colima_memory: 4
+colima_disk: 60
+
+# Service account (should match the user created by macos_base role)
+openclaw_user: openclaw

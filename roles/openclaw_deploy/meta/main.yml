@@ -1,0 +1,21 @@
+---
+# meta/main.yml — openclaw_deploy role
+#
+# Role metadata: dependencies, supported platforms, and Galaxy info.
+
+galaxy_info:
+  role_name: openclaw_deploy
+  author: defilan
+  description: >-
+    Deploy OpenClaw on a macOS Mac Mini. Starts Colima (headless Docker
+    runtime), clones the repository, runs Docker setup, validates onboarding,
+    and starts the gateway container.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+
+dependencies:
+  - role: homebrew

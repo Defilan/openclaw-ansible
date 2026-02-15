@@ -1,0 +1,37 @@
+---
+# defaults/main.yml — openclaw_maintain role
+#
+# Default variables for maintenance automation: scheduled backups,
+# health checks, and Google Drive sync.  Uses macOS launchd for
+# scheduling (not cron).
+#
+# Override these in host_vars / group_vars or at the playbook level.
+
+# Service account and paths (should match other roles)
+openclaw_user: openclaw
+openclaw_user_home: "/Users/{{ openclaw_user }}"
+openclaw_install_dir: "{{ openclaw_user_home }}/openclaw"
+openclaw_config_dir: "{{ openclaw_user_home }}/.openclaw"
+
+# --- Backup settings ---
+openclaw_backup_dir: "{{ openclaw_user_home }}/backups"
+openclaw_backup_retention_days: 30
+
+# --- Google Drive sync via rclone ---
+openclaw_backup_gdrive_enabled: true
+openclaw_backup_gdrive_dest: "OpenClaw-Backups"
+openclaw_backup_rclone_remote: "gdrive"
+
+# --- Backup schedule (launchd StartCalendarInterval) ---
+# Default: Saturday at 03:00
+openclaw_backup_schedule:
+  Weekday: 6
+  Hour: 3
+  Minute: 0
+
+# --- Health check schedule (launchd StartCalendarInterval) ---
+# Default: Sunday at 02:00
+openclaw_healthcheck_schedule:
+  Weekday: 0
+  Hour: 2
+  Minute: 0

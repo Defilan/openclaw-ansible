@@ -1,0 +1,108 @@
+---
+# tasks/system_settings.yml — macos_base role
+#
+# Applies macOS system-level settings to reduce the attack surface and
+# disable unnecessary services on the Mac Mini.
+
+- name: Disable AirDrop
+  community.general.osx_defaults:
+    domain: com.apple.NetworkBrowser
+    key: DisableAirDrop
+    type: bool
+    value: true
+    state: present
+  when: macos_disable_airdrop
+  tags:
+    - base
+
+- name: Disable AirPlay Receiver
+  # NOTE: Apple misspelled "Receiver" as "Reciever" in the actual plist key.
+  # This is intentional and matches the macOS implementation.
+  community.general.osx_defaults:
+    domain: com.apple.controlcenter
+    key: AirplayRecieverEnabled
+    type: int
+    value: 0
+    state: present
+  when: macos_disable_airplay
+  tags:
+    - base
+
+- name: Disable Remote Management (ARD)
+  ansible.builtin.command:
+    cmd: >-
+      /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart
+      -deactivate -configure -access -off
+  become: true
+  when: macos_disable_remote_management
+  changed_when: true
+  tags:
+    - base
+
+- name: Check if blueutil is installed
+  ansible.builtin.stat:
+    path: "{{ homebrew_path }}/blueutil"
+  register: _blueutil_check
+  when: macos_disable_bluetooth
+  tags:
+    - base
+
+- name: Disable Bluetooth discoverability
+  ansible.builtin.command:
+    cmd: "{{ homebrew_path }}/blueutil --discoverable 0"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: macos_disable_bluetooth and (_blueutil_check.stat.exists | default(false))
+  changed_when: true
+  tags:
+    - base
+
+- name: Warn if blueutil is not yet installed
+  ansible.builtin.debug:
+    msg: >-
+      blueutil is not installed yet — Bluetooth discoverability was not disabled.
+      It will be configured on the next run after the homebrew role installs it.
+  when: macos_disable_bluetooth and not (_blueutil_check.stat.exists | default(false))
+  tags:
+    - base
+
+- name: Check if Ghostty terminfo is installed (system-wide)
+  ansible.builtin.command:
+    cmd: infocmp -x xterm-ghostty
+  register: _ghostty_terminfo_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - base
+
+- name: Install Ghostty terminfo system-wide
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/ghostty-org/ghostty/v1.2.3/src/terminfo/ghostty.terminfo
+      | tic -x -
+  become: true
+  when: _ghostty_terminfo_check.rc != 0
+  tags:
+    - base
+
+- name: Check if Ghostty terminfo is installed for openclaw user
+  ansible.builtin.command:
+    cmd: infocmp -x xterm-ghostty
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _ghostty_terminfo_user_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - base
+
+- name: Install Ghostty terminfo for openclaw user
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/ghostty-org/ghostty/v1.2.3/src/terminfo/ghostty.terminfo
+      | tic -x -
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: _ghostty_terminfo_user_check.rc != 0
+  tags:
+    - base

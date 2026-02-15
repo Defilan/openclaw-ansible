@@ -1,0 +1,14 @@
+---
+# tasks/main.yml — macos_base role
+#
+# Orchestrates OS-level preparation of the Mac Mini for OpenClaw.
+# Sub-task files are imported in dependency order.
+
+- name: Create and configure the openclaw service user
+  ansible.builtin.import_tasks: user.yml
+
+- name: Apply macOS system settings (AirDrop, AirPlay, Remote Management, Bluetooth)
+  ansible.builtin.import_tasks: system_settings.yml
+
+- name: Configure macOS Application Firewall
+  ansible.builtin.import_tasks: firewall.yml

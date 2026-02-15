@@ -1,0 +1,48 @@
+---
+# handlers/main.yml — openclaw_maintain role
+#
+# Handlers for reloading launchd plists when templates change.
+# Uses launchctl load/unload (compatible with SSH sessions)
+# instead of bootstrap/bootout (which requires a GUI session).
+
+# --- Backup schedule handlers ---
+
+- name: reload backup schedule
+  ansible.builtin.command:
+    cmd: >-
+      launchctl unload
+      {{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.backup.plist
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ignore_errors: true
+  changed_when: true
+
+- name: load backup schedule
+  ansible.builtin.command:
+    cmd: >-
+      launchctl load -w
+      {{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.backup.plist
+  become: true
+  become_user: "{{ openclaw_user }}"
+  changed_when: true
+
+# --- Health check schedule handlers ---
+
+- name: reload healthcheck schedule
+  ansible.builtin.command:
+    cmd: >-
+      launchctl unload
+      {{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.healthcheck.plist
+  become: true
+  become_user: "{{ openclaw_user }}"
+  ignore_errors: true
+  changed_when: true
+
+- name: load healthcheck schedule
+  ansible.builtin.command:
+    cmd: >-
+      launchctl load -w
+      {{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.healthcheck.plist
+  become: true
+  become_user: "{{ openclaw_user }}"
+  changed_when: true

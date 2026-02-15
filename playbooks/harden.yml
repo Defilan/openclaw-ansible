@@ -1,0 +1,52 @@
+---
+# =============================================================================
+# OpenClaw Hardening Playbook - Phases 3 & 4
+# =============================================================================
+# Applies security hardening: gateway lockdown, consent mode, sandbox,
+# DM scope isolation, file permissions, API key management.
+#
+# Usage:
+#   ansible-playbook playbooks/harden.yml --ask-vault-pass --ask-become-pass
+#
+# Prerequisite: setup.yml must have been run and onboarding completed.
+
+- name: "Phase 3 & 4: Security Hardening"
+  hosts: mac-mini
+  gather_facts: true
+
+  pre_tasks:
+    - name: Verify OpenClaw config directory exists
+      ansible.builtin.stat:
+        path: "{{ openclaw_config_dir }}"
+      register: _config_dir
+      become: true
+      become_user: "{{ openclaw_user }}"
+      tags: always
+
+    - name: Fail if OpenClaw not deployed
+      ansible.builtin.fail:
+        msg: >
+          OpenClaw config directory not found at {{ openclaw_config_dir }}.
+          Please run setup.yml and complete onboarding first.
+      when: not _config_dir.stat.exists
+      tags: always
+
+  roles:
+    - role: openclaw_harden
+      become: true
+      become_user: "{{ openclaw_user }}"
+      tags: [harden]
+
+  post_tasks:
+    - name: "Phase 4 Reminder: Prompt Injection Defense (Manual)"
+      ansible.builtin.debug:
+        msg:
+          - "=== Phase 4: Prompt Injection Defense Checklist ==="
+          - "- Do NOT connect email or CRM to OpenClaw initially"
+          - "- Use modern, instruction-hardened models (Claude Sonnet 4.5+)"
+          - "- Be cautious with web browsing (sandbox helps)"
+          - "- NEVER install skills from ClawHub without reading source code"
+          - "- Pin skill versions, do not auto-update"
+          - "- Start with zero third-party skills"
+          - "- Run 'openclaw doctor' after installing any new skill"
+      tags: [harden]

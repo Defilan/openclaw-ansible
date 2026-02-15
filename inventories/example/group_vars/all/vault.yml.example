@@ -1,0 +1,32 @@
+---
+# =============================================================================
+# OpenClaw Ansible Vault — Required Secrets
+# =============================================================================
+# Copy this file to vault.yml and encrypt it:
+#
+#   cp vault.yml.example vault.yml
+#   ansible-vault encrypt vault.yml
+#
+# Or use the Makefile:
+#
+#   make vault-create    # Creates and encrypts a new vault file
+#   make vault-edit      # Edits the encrypted vault file
+#
+# Never commit the unencrypted vault.yml to version control.
+
+# --- Mac Mini Connection ---
+vault_mac_mini_ip: "192.168.1.100"          # Your Mac Mini's IP address
+vault_mac_mini_admin_user: "admin"           # macOS admin username
+vault_mac_mini_admin_password: "changeme"    # macOS admin password
+
+# --- OpenClaw User ---
+vault_openclaw_user_password: "changeme"     # Password for the dedicated openclaw user
+
+# --- OpenClaw Security ---
+# Generate with: openssl rand -hex 32
+vault_openclaw_auth_token: "AUTO_GENERATE"   # Or paste your own token
+
+# --- API Keys ---
+vault_openclaw_anthropic_api_key: "sk-ant-api03-YOUR-KEY-HERE"
+vault_openclaw_openai_api_key: ""            # Optional — leave empty if not using OpenAI
+vault_openclaw_brave_search_api_key: ""      # Optional — for web search integration

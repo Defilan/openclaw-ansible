@@ -1,0 +1,32 @@
+---
+# tasks/env_file.yml — openclaw_harden role
+#
+# Templates the .env file consumed by the OpenClaw Docker Compose stack
+# and optionally injects the OPENCLAW_DISABLE_BONJOUR variable into
+# the service user's shell profile.
+
+- name: Template OpenClaw .env file
+  ansible.builtin.template:
+    src: openclaw.env.j2
+    dest: "{{ openclaw_install_dir }}/.env"
+    owner: "{{ openclaw_user }}"
+    mode: "0600"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  notify: restart openclaw gateway
+  no_log: true
+  tags:
+    - harden
+
+- name: Disable Bonjour/mDNS via .zprofile
+  ansible.builtin.lineinfile:
+    path: "{{ openclaw_user_home }}/.zprofile"
+    line: "OPENCLAW_DISABLE_BONJOUR=1"
+    create: true
+    owner: "{{ openclaw_user }}"
+    mode: "0644"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: openclaw_disable_bonjour | bool
+  tags:
+    - harden

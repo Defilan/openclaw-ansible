@@ -1,0 +1,28 @@
+---
+# meta/main.yml — openclaw_browser role
+#
+# Role metadata: dependencies, supported platforms, and Galaxy info.
+# Depends on openclaw_harden because browser configuration is merged
+# into openclaw.json during the harden role's config merge step.
+
+galaxy_info:
+  role_name: openclaw_browser
+  author: defilan
+  description: >-
+    Optional browser automation setup for OpenClaw on macOS.  Builds the
+    browser sandbox Docker image when enabled.  Browser settings are
+    merged into openclaw.json by the openclaw_harden role.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+  galaxy_tags:
+    - macos
+    - openclaw
+    - browser
+    - docker
+
+dependencies:
+  - role: openclaw_harden

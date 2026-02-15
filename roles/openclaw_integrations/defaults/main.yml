@@ -1,0 +1,19 @@
+---
+# defaults/main.yml — openclaw_integrations role
+#
+# Default variables for model failover and custom provider configuration.
+# These variables are consumed by the openclaw_harden role during its
+# config merge step.  Override in host_vars / group_vars as needed.
+#
+# NOTE: API keys MUST be supplied via Ansible Vault or extra-vars.
+# Never commit real credentials to source control.
+
+# --- Model failover chain ---
+openclaw_model_primary: "anthropic/claude-sonnet-4-5"
+openclaw_model_fallbacks:
+  - "openai/gpt-4o"
+
+# --- Custom / self-hosted provider (disabled by default) ---
+openclaw_custom_provider_enabled: false
+openclaw_custom_provider_base_url: ""
+openclaw_custom_provider_api_key: ""

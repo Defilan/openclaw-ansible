@@ -1,0 +1,32 @@
+---
+# tasks/start_gateway.yml — openclaw_deploy role
+#
+# Ensures the OpenClaw gateway container is running. Checks with plain
+# `docker ps` first (which doesn't need a valid .env) so that downstream
+# roles like openclaw_harden can fix the .env before any restart.
+
+- name: Check if gateway container is already running
+  ansible.builtin.command:
+    cmd: docker ps --filter "name=openclaw.*gateway" --filter "status=running" -q
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _gateway_running
+  changed_when: false
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+
+- name: Start the OpenClaw gateway container
+  ansible.builtin.command:
+    cmd: docker compose up -d openclaw-gateway
+    chdir: "{{ openclaw_install_dir }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: gateway_start
+  changed_when: "'Started' in gateway_start.stderr or 'Creating' in gateway_start.stderr"
+  when: _gateway_running.stdout | length == 0
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy

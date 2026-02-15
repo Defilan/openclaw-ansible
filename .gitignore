@@ -1,0 +1,29 @@
+# Ansible
+*.retry
+/tmp/
+fact_cache/
+
+# Vault password file (if used instead of --ask-vault-pass)
+.vault_password
+
+# Production inventory (user-specific, never committed)
+inventories/production/
+
+# Environment files
+.env
+*.env.local
+
+# macOS
+.DS_Store
+._*
+
+# IDE / AI tools
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+
+# Sensitive files that should never be committed
+**/credentials/
+**/secrets/

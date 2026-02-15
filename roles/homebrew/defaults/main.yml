@@ -1,0 +1,14 @@
+---
+# defaults/main.yml — homebrew role
+
+homebrew_formulae:
+  - node@22
+  - git
+  - blueutil
+  - docker
+  - docker-compose
+  - colima
+
+homebrew_casks: []
+
+homebrew_path: /opt/homebrew/bin

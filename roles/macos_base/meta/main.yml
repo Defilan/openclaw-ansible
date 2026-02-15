@@ -1,0 +1,24 @@
+---
+# meta/main.yml — macos_base role
+
+galaxy_info:
+  author: defilan
+  description: >-
+    Prepares a macOS (Apple Silicon) Mac Mini at the OS level for running
+    OpenClaw. Creates a service user, hardens system settings, and
+    configures the application firewall.
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+
+  galaxy_tags:
+    - macos
+    - hardening
+    - firewall
+    - system
+
+dependencies: []

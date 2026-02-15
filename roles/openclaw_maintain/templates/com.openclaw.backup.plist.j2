@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+{#
+  com.openclaw.backup.plist — Managed by Ansible
+  Scheduled backup of OpenClaw configuration with optional Google Drive sync.
+#}
+<dict>
+    <key>Label</key>
+    <string>com.openclaw.backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>{{ openclaw_user_home }}/bin/openclaw-backup.sh{% if openclaw_backup_gdrive_enabled | bool %} &amp;&amp; {{ openclaw_user_home }}/bin/openclaw-gdrive-sync.sh{% endif %}</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OPENCLAW_BACKUP_DIR</key>
+        <string>{{ openclaw_backup_dir }}</string>
+        <key>OPENCLAW_CONFIG_DIR</key>
+        <string>{{ openclaw_config_dir }}</string>
+        <key>OPENCLAW_BACKUP_RETENTION</key>
+        <string>{{ openclaw_backup_retention_days }}</string>
+{% if openclaw_backup_gdrive_enabled | bool %}
+        <key>OPENCLAW_GDRIVE_DEST</key>
+        <string>{{ openclaw_backup_gdrive_dest }}</string>
+        <key>OPENCLAW_RCLONE_REMOTE</key>
+        <string>{{ openclaw_backup_rclone_remote }}</string>
+{% endif %}
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>{{ openclaw_user_home }}</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+{% for key, value in openclaw_backup_schedule.items() %}
+        <key>{{ key }}</key>
+        <integer>{{ value }}</integer>
+{% endfor %}
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{ openclaw_user_home }}/Library/Logs/openclaw-backup.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ openclaw_user_home }}/Library/Logs/openclaw-backup.log</string>
+</dict>
+</plist>

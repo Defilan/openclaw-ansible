@@ -1,0 +1,29 @@
+---
+# =============================================================================
+# OpenClaw Maintenance Playbook - Phase 7
+# =============================================================================
+# Deploys scheduled maintenance (backups, health checks) and runs on-demand
+# diagnostics.
+#
+# Usage:
+#   # Deploy schedules + run all maintenance tasks
+#   ansible-playbook playbooks/maintain.yml --ask-vault-pass --ask-become-pass
+#
+#   # Health check only
+#   ansible-playbook playbooks/maintain.yml --ask-vault-pass --tags health_check
+#
+#   # Run backup now
+#   ansible-playbook playbooks/maintain.yml --ask-vault-pass --tags backup
+#
+#   # Deploy/update scheduled jobs only
+#   ansible-playbook playbooks/maintain.yml --ask-vault-pass --tags schedules
+
+- name: "Phase 7: Maintenance"
+  hosts: mac-mini
+  gather_facts: true
+
+  roles:
+    - role: openclaw_maintain
+      become: true
+      become_user: "{{ openclaw_user }}"
+      tags: [maintenance]

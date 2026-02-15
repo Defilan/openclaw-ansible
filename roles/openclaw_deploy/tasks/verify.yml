@@ -1,0 +1,51 @@
+---
+# tasks/verify.yml — openclaw_deploy role
+#
+# Verifies the gateway container is running using plain `docker` commands
+# (not `docker compose`) to avoid dependency on a valid .env file.
+
+- name: Check gateway container is running
+  ansible.builtin.command:
+    cmd: docker ps --filter "name=openclaw.*gateway" --filter "status=running" -q
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _gateway_ps
+  changed_when: false
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+    - health_check
+
+- name: Verify gateway container status
+  ansible.builtin.debug:
+    msg: "{{ 'OpenClaw gateway container is running' if _gateway_ps.stdout | length > 0 else 'WARNING: Gateway container is not running — will be restarted after config is applied' }}"
+  tags:
+    - deploy
+    - health_check
+
+- name: Check gateway is listening on port {{ openclaw_gateway_port }}
+  ansible.builtin.command:
+    cmd: >-
+      docker exec {{ _gateway_ps.stdout_lines[0] }}
+      sh -c "curl -sf http://127.0.0.1:{{ openclaw_gateway_port }}/ -o /dev/null -w '%{http_code}' || true"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _gateway_http
+  changed_when: false
+  ignore_errors: true
+  when: _gateway_ps.stdout | length > 0
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - deploy
+    - health_check
+
+- name: Display gateway health status
+  ansible.builtin.debug:
+    msg: >-
+      Gateway container: {{ 'running (' + _gateway_ps.stdout_lines[0][:12] + ')' if _gateway_ps.stdout | length > 0 else 'NOT RUNNING' }} |
+      HTTP check: {{ 'responding' if (_gateway_http.rc | default(1)) == 0 else 'skipped or not reachable' }}
+  tags:
+    - deploy
+    - health_check

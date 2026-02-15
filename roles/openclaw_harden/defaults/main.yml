@@ -1,0 +1,65 @@
+---
+# defaults/main.yml — openclaw_harden role
+#
+# Default variables for security hardening an OpenClaw instance.
+# Override these in host_vars / group_vars or at the playbook level.
+#
+# NOTE: API keys default to empty strings and MUST be supplied via vault
+# or extra-vars.  Never commit real credentials to source control.
+
+# Service account (must match the user created by macos_base role)
+openclaw_user: openclaw
+openclaw_user_home: "/Users/{{ openclaw_user }}"
+openclaw_config_dir: "{{ openclaw_user_home }}/.openclaw"
+openclaw_install_dir: "{{ openclaw_user_home }}/openclaw"
+
+# --- Gateway settings ---
+openclaw_gateway_port: 18789
+openclaw_gateway_mode: "local"
+openclaw_auth_token: "AUTO_GENERATE"
+
+# Valid values: "off", "on-miss", "always"
+openclaw_consent_mode: "always"
+
+# --- Sandbox settings ---
+openclaw_sandbox_mode: "non-main"
+openclaw_sandbox_scope: "session"
+openclaw_sandbox_workspace_access: "none"
+openclaw_sandbox_docker_network: "none"
+openclaw_sandbox_docker_image: "openclaw-sandbox:bookworm-slim"
+
+# --- Control UI (dashboard) settings ---
+# Docker NAT causes the browser to appear as a non-localhost IP, which
+# triggers device-pairing even when a valid auth token is supplied.
+# Setting this to true lets token auth work without device pairing.
+openclaw_control_ui_allow_insecure_auth: true
+
+# --- Session / network settings ---
+openclaw_dm_scope: "per-peer"
+openclaw_disable_bonjour: true
+
+# --- API keys (supply via vault or extra-vars) ---
+openclaw_anthropic_api_key: ""
+openclaw_openai_api_key: ""
+openclaw_brave_search_api_key: ""
+
+# --- Model defaults ---
+openclaw_model_primary: "anthropic/claude-sonnet-4-5"
+openclaw_model_fallbacks:
+  - "openai/gpt-4o"
+
+# --- Custom provider (disabled by default) ---
+openclaw_custom_provider_enabled: false
+# openclaw_custom_provider_name: "llmkube"
+# openclaw_custom_provider_base_url: ""
+# openclaw_custom_provider_api_key: ""
+# openclaw_custom_provider_model_id: ""
+# openclaw_custom_provider_model_name: ""
+# openclaw_custom_provider_model_reasoning: false
+
+# --- Browser integration (disabled by default) ---
+openclaw_browser_enabled: false
+# openclaw_browser_profile_name: "default"
+# openclaw_browser_headless: true
+# openclaw_browser_cdp_port: 9222
+# openclaw_browser_profile_color: "#4A90D9"

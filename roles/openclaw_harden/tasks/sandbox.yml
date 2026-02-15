@@ -1,0 +1,32 @@
+---
+# tasks/sandbox.yml — openclaw_harden role
+#
+# Ensures the Docker sandbox image required by OpenClaw is available.
+# If the image does not already exist locally, the sandbox-setup.sh
+# script from the repository is executed to build it.
+
+- name: Check if sandbox Docker image exists
+  ansible.builtin.command:
+    cmd: "docker images -q {{ openclaw_sandbox_docker_image }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _sandbox_image_check
+  changed_when: false
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - harden
+    - sandbox
+
+- name: Build sandbox image if not present
+  ansible.builtin.command:
+    cmd: ./scripts/sandbox-setup.sh
+    chdir: "{{ openclaw_install_dir }}"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  when: _sandbox_image_check.stdout | length == 0
+  environment:
+    PATH: "{{ homebrew_path }}:{{ ansible_env.PATH | default('/usr/bin:/bin:/usr/sbin:/sbin') }}"
+  tags:
+    - harden
+    - sandbox

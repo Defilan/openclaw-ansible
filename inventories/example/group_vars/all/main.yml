@@ -1,0 +1,131 @@
+---
+# =============================================================================
+# OpenClaw Mac Mini - Ansible Variables
+# =============================================================================
+# Sensitive values are stored in vault.yml and referenced here.
+# Run `make vault-edit` to manage secrets.
+
+# --- Mac Mini Connection (from vault) ---
+mac_mini_ip: "{{ vault_mac_mini_ip }}"
+mac_mini_admin_user: "{{ vault_mac_mini_admin_user }}"
+
+# --- Phase 1: macOS Base Configuration ---
+openclaw_user: openclaw
+openclaw_user_password: "{{ vault_openclaw_user_password }}"
+openclaw_user_home: "/Users/{{ openclaw_user }}"
+
+# SSH authorized keys for the openclaw user
+openclaw_ssh_authorized_keys:
+  - "ssh-rsa YOUR_PUBLIC_KEY_HERE"
+
+# macOS hardening toggles
+macos_disable_airdrop: true
+macos_disable_airplay: true
+macos_disable_remote_management: true
+macos_disable_bluetooth: true
+macos_enable_firewall: true
+macos_firewall_stealth_mode: true
+
+# Static IP (set to true if configuring on-host instead of DHCP reservation)
+macos_static_ip_enabled: false
+# macos_static_ip_address: "192.168.1.50"
+# macos_static_ip_subnet: "255.255.255.0"
+# macos_static_ip_gateway: "192.168.1.1"
+# macos_static_ip_dns:
+#   - "1.1.1.1"
+#   - "8.8.8.8"
+
+# --- Homebrew ---
+homebrew_path: /opt/homebrew/bin
+
+# --- Phase 1: Homebrew Packages ---
+homebrew_formulae:
+  - node@22
+  - git
+  - blueutil
+  - docker
+  - docker-compose
+  - colima
+  - socat
+homebrew_casks: []
+
+# --- Phase 2: OpenClaw Deployment ---
+# Colima VM resources (headless Docker runtime — no GUI needed)
+colima_cpu: 2
+colima_memory: 4
+colima_disk: 60
+openclaw_repo_url: "https://github.com/openclaw/openclaw.git"
+openclaw_version: "main"  # Pin to a release tag (e.g., "v1.2.3") when available
+openclaw_install_dir: "{{ openclaw_user_home }}/openclaw"
+openclaw_config_dir: "{{ openclaw_user_home }}/.openclaw"
+
+# --- Phase 3: Security Hardening ---
+openclaw_gateway_port: 18789
+openclaw_gateway_mode: "local"
+openclaw_auth_token: "{{ vault_openclaw_auth_token }}"
+
+# Valid values: "off", "on-miss", "always"
+openclaw_consent_mode: "always"
+
+# Dashboard: allow token auth without device pairing (needed for Docker NAT)
+openclaw_control_ui_allow_insecure_auth: true
+
+openclaw_sandbox_mode: "off"
+openclaw_sandbox_scope: "session"
+openclaw_sandbox_workspace_access: "none"
+openclaw_sandbox_docker_network: "none"
+openclaw_sandbox_docker_image: "openclaw-sandbox:bookworm-slim"
+
+openclaw_dm_scope: "per-peer"
+openclaw_disable_bonjour: true
+
+# API keys (from vault)
+openclaw_anthropic_api_key: "{{ vault_openclaw_anthropic_api_key }}"
+openclaw_openai_api_key: "{{ vault_openclaw_openai_api_key | default('') }}"
+openclaw_brave_search_api_key: "{{ vault_openclaw_brave_search_api_key }}"
+
+# --- Phase 5: Model & Integration Configuration ---
+openclaw_model_primary: "anthropic/claude-sonnet-4-5"
+openclaw_model_fallbacks:
+  - "openai/gpt-4o"
+
+# Custom provider — disabled by default
+# Enable and configure to use a local LLM via LLMKube or any OpenAI-compatible API
+openclaw_custom_provider_enabled: false
+# openclaw_custom_provider_name: "llmkube"
+# openclaw_custom_provider_base_url: "http://host.docker.internal:30088/v1"
+# openclaw_custom_provider_api_key: "no-key-required"
+# openclaw_custom_provider_model_id: "qwen3-32b"
+# openclaw_custom_provider_model_name: "Qwen 3 32B"
+# openclaw_custom_provider_model_reasoning: false
+
+# LLM proxy — disabled by default
+# Enable to forward traffic from the Colima VM to a K8s NodePort on your LAN
+openclaw_llm_proxy_enabled: false
+# openclaw_llm_proxy_listen_port: 30088
+# openclaw_llm_proxy_target: "YOUR_K8S_NODE_IP:30088"
+
+# --- Phase 6: Browser Automation (Optional) ---
+openclaw_browser_enabled: false
+openclaw_browser_cdp_port: 18792
+openclaw_browser_headless: false
+openclaw_browser_profile_name: "openclaw"
+openclaw_browser_profile_color: "#FF6B00"
+
+# --- Phase 7: Maintenance ---
+openclaw_backup_dir: "{{ openclaw_user_home }}/backups"
+openclaw_backup_retention_days: 30
+openclaw_backup_gdrive_enabled: true
+openclaw_backup_gdrive_dest: "OpenClaw-Backups"
+
+# launchd schedule (macOS calendar intervals)
+# Day 0 = Sunday
+openclaw_backup_schedule:
+  weekday: 6  # Saturday
+  hour: 3
+  minute: 0
+
+openclaw_healthcheck_schedule:
+  weekday: 0  # Sunday
+  hour: 2
+  minute: 0

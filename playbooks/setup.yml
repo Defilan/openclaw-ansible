@@ -1,0 +1,44 @@
+---
+# =============================================================================
+# OpenClaw Setup Playbook - Phases 1 & 2
+# =============================================================================
+# Prepares the Mac Mini (user, system settings, packages) and deploys OpenClaw.
+#
+# Usage:
+#   ansible-playbook playbooks/setup.yml --ask-vault-pass --ask-become-pass
+#
+# Note: This playbook will stop if onboarding has not been completed.
+#       After onboarding, re-run to start the gateway.
+
+- name: "Phase 1 & 2: Prepare Mac Mini and Deploy OpenClaw"
+  hosts: mac-mini
+  gather_facts: true
+
+  pre_tasks:
+    - name: Verify target is macOS
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "Darwin"
+        fail_msg: "This playbook only supports macOS targets."
+      tags: always
+
+    - name: Verify Apple Silicon
+      ansible.builtin.assert:
+        that:
+          - ansible_architecture == "arm64"
+        fail_msg: "This playbook is designed for Apple Silicon Macs."
+      tags: always
+
+  roles:
+    - role: macos_base
+      become: true
+      tags: [base]
+
+    - role: homebrew
+      become: true
+      tags: [homebrew]
+
+    - role: openclaw_deploy
+      become: true
+      become_user: "{{ openclaw_user }}"
+      tags: [deploy]

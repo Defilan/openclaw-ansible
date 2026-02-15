@@ -1,0 +1,8 @@
+---
+# docker-compose.override.yml — managed by Ansible (openclaw_integrations role)
+# Adds host.docker.internal so the gateway container can reach the
+# Mac Mini host (and from there, the socat LLM proxy to the K8s cluster).
+services:
+  openclaw-gateway:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

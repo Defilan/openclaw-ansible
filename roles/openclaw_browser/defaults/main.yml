@@ -1,0 +1,17 @@
+---
+# defaults/main.yml — openclaw_browser role
+#
+# Default variables for optional browser automation setup.
+# The entire role is gated behind openclaw_browser_enabled.
+# Browser configuration is merged into openclaw.json by the
+# openclaw_harden role; this role only ensures the sandbox image exists.
+
+openclaw_browser_enabled: false
+openclaw_browser_cdp_port: 18792
+openclaw_browser_headless: false
+openclaw_browser_profile_name: "openclaw"
+openclaw_browser_profile_color: "#FF6B00"
+
+# Service account and paths (should match other roles)
+openclaw_user: openclaw
+openclaw_install_dir: "/Users/{{ openclaw_user }}/openclaw"

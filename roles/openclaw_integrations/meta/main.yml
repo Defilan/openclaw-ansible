@@ -1,0 +1,26 @@
+---
+# meta/main.yml — openclaw_integrations role
+#
+# Role metadata: dependencies, supported platforms, and Galaxy info.
+# This role has no dependencies; it only sets variables that are consumed
+# by the openclaw_harden role's configuration merge.
+
+galaxy_info:
+  role_name: openclaw_integrations
+  author: defilan
+  description: >-
+    Configure model failover chains and custom provider settings for
+    OpenClaw on macOS.  Variables are consumed by openclaw_harden.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+  galaxy_tags:
+    - macos
+    - openclaw
+    - llm
+    - integrations
+
+dependencies: []

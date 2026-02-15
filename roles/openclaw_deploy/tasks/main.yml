@@ -1,0 +1,21 @@
+---
+# tasks/main.yml — openclaw_deploy role
+#
+# Orchestrates the full OpenClaw deployment on a macOS Mac Mini.
+# Sub-task files are imported in dependency order:
+#   1. Ensure Colima (Docker runtime) is running and clone the repository
+#   2. Run the Docker setup script and verify onboarding
+#   3. Start the gateway container
+#   4. Verify the deployment with doctor and status checks
+
+- name: Ensure Docker (via Colima) is running and clone the OpenClaw repository
+  ansible.builtin.import_tasks: clone.yml
+
+- name: Run Docker setup and verify onboarding
+  ansible.builtin.import_tasks: docker_setup.yml
+
+- name: Start the OpenClaw gateway
+  ansible.builtin.import_tasks: start_gateway.yml
+
+- name: Verify OpenClaw deployment health
+  ansible.builtin.import_tasks: verify.yml

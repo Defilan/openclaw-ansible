@@ -1,0 +1,20 @@
+---
+# defaults/main.yml — macos_base role
+
+# Service account for running OpenClaw
+openclaw_user: openclaw
+openclaw_user_password: ""
+openclaw_user_home: "/Users/{{ openclaw_user }}"
+
+# macOS hardening toggles
+macos_disable_airdrop: true
+macos_disable_airplay: true
+macos_disable_remote_management: true
+macos_disable_bluetooth: true
+
+# Firewall settings
+macos_enable_firewall: true
+macos_firewall_stealth_mode: true
+
+# Networking
+macos_static_ip_enabled: false

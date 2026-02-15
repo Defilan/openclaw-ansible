@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+{#
+  com.openclaw.healthcheck.plist — Managed by Ansible
+  Scheduled deep health check of the OpenClaw gateway via docker compose.
+#}
+<dict>
+    <key>Label</key>
+    <string>com.openclaw.healthcheck</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>docker compose exec openclaw-gateway openclaw doctor --deep</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{ openclaw_install_dir }}</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>{{ openclaw_user_home }}</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+{% for key, value in openclaw_healthcheck_schedule.items() %}
+        <key>{{ key }}</key>
+        <integer>{{ value }}</integer>
+{% endfor %}
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{ openclaw_user_home }}/Library/Logs/openclaw-healthcheck.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ openclaw_user_home }}/Library/Logs/openclaw-healthcheck.log</string>
+</dict>
+</plist>

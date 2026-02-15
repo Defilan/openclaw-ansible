@@ -1,0 +1,115 @@
+---
+# tasks/user.yml — macos_base role
+#
+# Creates a standard (non-admin) local user account for running OpenClaw.
+# The user is explicitly excluded from the admin group to follow the
+# principle of least privilege.
+
+- name: Check if openclaw user exists
+  ansible.builtin.command:
+    cmd: "dscl . -read /Users/{{ openclaw_user }}"
+  register: _openclaw_user_check
+  failed_when: false
+  changed_when: false
+  become: true
+  tags:
+    - base
+
+- name: Create the openclaw service user account
+  when: _openclaw_user_check.rc != 0
+  become: true
+  tags:
+    - base
+  block:
+    - name: Determine next available UniqueID
+      ansible.builtin.shell: |
+        dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1 | xargs -I{} expr {} + 1
+      register: _next_uid
+      changed_when: false
+
+    - name: Create user record
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }}"
+
+    - name: Set user shell
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }} UserShell /bin/zsh"
+
+    - name: Set user real name
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }} RealName OpenClaw"
+
+    - name: Set user UniqueID
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }} UniqueID {{ _next_uid.stdout }}"
+
+    - name: Set user primary group
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }} PrimaryGroupID 20"
+
+    - name: Set user home directory
+      ansible.builtin.command:
+        cmd: "dscl . -create /Users/{{ openclaw_user }} NFSHomeDirectory {{ openclaw_user_home }}"
+
+    - name: Set user password
+      ansible.builtin.command:
+        cmd: "dscl . -passwd /Users/{{ openclaw_user }} {{ openclaw_user_password }}"
+      no_log: true
+
+    - name: Create home directory
+      ansible.builtin.file:
+        path: "{{ openclaw_user_home }}"
+        state: directory
+        owner: "{{ openclaw_user }}"
+        group: staff
+        mode: "0755"
+
+- name: Grant openclaw user SSH access
+  ansible.builtin.command:
+    cmd: "dseditgroup -o edit -a {{ openclaw_user }} -t user com.apple.access_ssh"
+  become: true
+  register: _ssh_access
+  changed_when: _ssh_access.rc == 0
+  failed_when: false
+  tags:
+    - base
+
+- name: Ensure .ssh directory exists for openclaw user
+  ansible.builtin.file:
+    path: "{{ openclaw_user_home }}/.ssh"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: staff
+    mode: "0700"
+  become: true
+  tags:
+    - base
+
+- name: Deploy authorized SSH keys for openclaw user
+  ansible.posix.authorized_key:
+    user: "{{ openclaw_user }}"
+    state: present
+    key: "{{ item }}"
+  loop: "{{ openclaw_ssh_authorized_keys }}"
+  become: true
+  when: openclaw_ssh_authorized_keys | default([]) | length > 0
+  tags:
+    - base
+
+- name: Ensure openclaw user is NOT in the admin group
+  ansible.builtin.command:
+    cmd: "dseditgroup -o checkmember -m {{ openclaw_user }} admin"
+  register: admin_group_check
+  failed_when: false
+  changed_when: false
+  become: true
+  tags:
+    - base
+
+- name: Remove openclaw user from admin group if present
+  ansible.builtin.command:
+    cmd: "dseditgroup -o edit -d {{ openclaw_user }} -t user admin"
+  when: admin_group_check.rc == 0
+  become: true
+  tags:
+    - base

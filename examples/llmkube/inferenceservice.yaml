@@ -1,0 +1,20 @@
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: InferenceService
+metadata:
+  name: openclaw-llm
+  namespace: default
+spec:
+  modelRef: qwen3-32b
+  replicas: 1
+  image: ghcr.io/ggml-org/llama.cpp:server-cuda
+  contextSize: 32768
+  endpoint:
+    port: 8080
+    path: /v1/chat/completions
+    type: NodePort
+  resources:
+    gpu: 2
+    gpuMemory: "16Gi"
+    cpu: "8"
+    memory: "24Gi"
+  priority: normal

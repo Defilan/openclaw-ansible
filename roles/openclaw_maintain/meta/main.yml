@@ -1,0 +1,30 @@
+---
+# meta/main.yml — openclaw_maintain role
+#
+# Role metadata: dependencies, supported platforms, and Galaxy info.
+# Depends on openclaw_deploy (gateway must be running for health checks)
+# and homebrew (needed for rclone installation when gdrive sync is enabled).
+
+galaxy_info:
+  role_name: openclaw_maintain
+  author: defilan
+  description: >-
+    Maintenance automation for OpenClaw on macOS.  Deploys scheduled
+    backups and health checks via launchd, with optional Google Drive
+    backup sync via rclone.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: MacOSX
+      versions:
+        - all
+  galaxy_tags:
+    - macos
+    - openclaw
+    - backup
+    - maintenance
+    - launchd
+
+dependencies:
+  - role: openclaw_deploy
+  - role: homebrew

@@ -1,0 +1,218 @@
+---
+# tasks/config.yml — openclaw_harden role
+#
+# Implements the read-merge-write strategy for openclaw.json.
+# This preserves any values that the onboarding wizard already wrote
+# while layering the hardening configuration on top.
+
+# ---- 1. Auth token generation ------------------------------------------------
+
+- name: Generate auth token when AUTO_GENERATE is requested
+  ansible.builtin.command:
+    cmd: openssl rand -hex 32
+  register: _generated_token
+  changed_when: false
+  when: openclaw_auth_token == "AUTO_GENERATE"
+  tags:
+    - harden
+    - config
+
+- name: Set auth token fact (generated)
+  ansible.builtin.set_fact:
+    _openclaw_auth_token: "{{ _generated_token.stdout }}"
+  when: openclaw_auth_token == "AUTO_GENERATE"
+  tags:
+    - harden
+    - config
+
+- name: Set auth token fact (user-supplied)
+  ansible.builtin.set_fact:
+    _openclaw_auth_token: "{{ openclaw_auth_token }}"
+  when: openclaw_auth_token != "AUTO_GENERATE"
+  tags:
+    - harden
+    - config
+
+- name: Display generated auth token — save this to your vault file
+  ansible.builtin.debug:
+    msg: >-
+      GENERATED AUTH TOKEN: {{ _openclaw_auth_token }}
+      — Save this value to your Ansible Vault file as openclaw_auth_token
+  when: openclaw_auth_token == "AUTO_GENERATE"
+  tags:
+    - harden
+    - config
+
+# ---- 2. Read existing config -------------------------------------------------
+
+- name: Read existing openclaw.json
+  ansible.builtin.slurp:
+    src: "{{ openclaw_config_dir }}/openclaw.json"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _existing_config
+  ignore_errors: true
+  tags:
+    - harden
+    - config
+
+# ---- 3. Build the hardening overlay ------------------------------------------
+
+- name: Build hardening config overlay
+  ansible.builtin.set_fact:
+    _hardening_config:
+      gateway:
+        port: "{{ openclaw_gateway_port }}"
+        auth:
+          token: "{{ _openclaw_auth_token }}"
+        mode: "{{ openclaw_gateway_mode }}"
+        controlUi:
+          allowInsecureAuth: "{{ openclaw_control_ui_allow_insecure_auth | bool }}"
+      tools:
+        exec:
+          ask: "{{ openclaw_consent_mode }}"
+        web:
+          search:
+            apiKey: "{{ openclaw_brave_search_api_key }}"
+      agents:
+        defaults:
+          sandbox:
+            mode: "{{ openclaw_sandbox_mode }}"
+            scope: "{{ openclaw_sandbox_scope }}"
+            workspaceAccess: "{{ openclaw_sandbox_workspace_access }}"
+            docker:
+              network: "{{ openclaw_sandbox_docker_network }}"
+              image: "{{ openclaw_sandbox_docker_image }}"
+          model:
+            primary: "{{ openclaw_model_primary }}"
+            fallbacks: "{{ openclaw_model_fallbacks }}"
+      session:
+        dmScope: "{{ openclaw_dm_scope }}"
+  tags:
+    - harden
+    - config
+
+# ---- 4. Conditionally add custom provider block ------------------------------
+
+- name: Add custom provider config
+  ansible.builtin.set_fact:
+    _hardening_config: >-
+      {{ _hardening_config | combine({
+        'models': {
+          'providers': {
+            openclaw_custom_provider_name: {
+              'baseUrl': openclaw_custom_provider_base_url,
+              'apiKey': openclaw_custom_provider_api_key,
+              'api': 'openai-completions',
+              'models': [{
+                'id': openclaw_custom_provider_model_id,
+                'name': openclaw_custom_provider_model_name,
+                'reasoning': openclaw_custom_provider_model_reasoning | bool,
+                'input': ['text'],
+                'cost': {'input': 0, 'output': 0}
+              }]
+            }
+          }
+        }
+      }, recursive=True) }}
+  when: openclaw_custom_provider_enabled | bool
+  tags:
+    - harden
+    - config
+
+# ---- 5. Conditionally add browser config -------------------------------------
+
+- name: Add browser config
+  ansible.builtin.set_fact:
+    _hardening_config: >-
+      {{ _hardening_config | combine({
+        'browser': {
+          'enabled': true,
+          'defaultProfile': openclaw_browser_profile_name,
+          'headless': openclaw_browser_headless,
+          'profiles': {
+            openclaw_browser_profile_name: {
+              'cdpPort': openclaw_browser_cdp_port,
+              'color': openclaw_browser_profile_color
+            }
+          }
+        }
+      }, recursive=True) }}
+  when: openclaw_browser_enabled | bool
+  tags:
+    - harden
+    - config
+
+# ---- 6. Parse, clean, and merge ------------------------------------------------
+
+- name: Parse existing config
+  ansible.builtin.set_fact:
+    _existing_parsed: "{{ (_existing_config.content | b64decode | from_json) if _existing_config is succeeded else {} }}"
+  tags:
+    - harden
+    - config
+
+# Remove keys that OpenClaw's schema does not recognize.
+- name: Clean invalid top-level keys
+  ansible.builtin.set_fact:
+    _existing_parsed: >-
+      {{ _existing_parsed | dict2items
+        | rejectattr('key', 'equalto', 'providers')
+        | list | items2dict }}
+  when: "'providers' in _existing_parsed"
+  tags:
+    - harden
+    - config
+
+# Rebuild each affected section without the invalid keys using dict2items/items2dict.
+- name: Clean invalid keys from gateway section
+  ansible.builtin.set_fact:
+    _existing_parsed: >-
+      {{ _existing_parsed | combine({
+        'gateway': _existing_parsed.get('gateway', {}) | dict2items
+          | rejectattr('key', 'in', ['bind', 'mdns'])
+          | list | items2dict
+      }, recursive=False) }}
+  when: _existing_parsed.get('gateway', {}) is mapping
+  tags:
+    - harden
+    - config
+
+- name: Clean invalid keys from sandbox section
+  ansible.builtin.set_fact:
+    _existing_parsed: >-
+      {{ _existing_parsed | combine({
+        'agents': _existing_parsed.get('agents', {}) | combine({
+          'defaults': _existing_parsed.get('agents', {}).get('defaults', {}) | combine({
+            'sandbox': _existing_parsed.get('agents', {}).get('defaults', {}).get('sandbox', {})
+              | dict2items | rejectattr('key', 'equalto', 'enabled') | list | items2dict
+          }, recursive=False)
+        }, recursive=False)
+      }, recursive=False) }}
+  when: _existing_parsed.get('agents', {}).get('defaults', {}).get('sandbox', {}) is mapping
+  tags:
+    - harden
+    - config
+
+- name: Merge configs (existing + hardening overlay)
+  ansible.builtin.set_fact:
+    _final_config: "{{ _existing_parsed | combine(_hardening_config, recursive=True) }}"
+  tags:
+    - harden
+    - config
+
+# ---- 7. Write merged config ---------------------------------------------------
+
+- name: Write merged openclaw.json
+  ansible.builtin.copy:
+    content: "{{ _final_config | to_nice_json(indent=2) }}\n"
+    dest: "{{ openclaw_config_dir }}/openclaw.json"
+    owner: "{{ openclaw_user }}"
+    mode: "0600"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  notify: restart openclaw gateway
+  no_log: true
+  tags:
+    - harden
+    - config

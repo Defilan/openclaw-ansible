@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.openclaw.llm-proxy</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ homebrew_path }}/socat</string>
+        <string>TCP-LISTEN:{{ openclaw_llm_proxy_listen_port }},bind=127.0.0.1,fork,reuseaddr</string>
+        <string>TCP:{{ openclaw_llm_proxy_target }}</string>
+    </array>
+    <key>UserName</key>
+    <string>{{ openclaw_user }}</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/openclaw-llm-proxy.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/openclaw-llm-proxy.err</string>
+</dict>
+</plist>

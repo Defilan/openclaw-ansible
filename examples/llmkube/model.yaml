@@ -1,0 +1,20 @@
+apiVersion: inference.llmkube.dev/v1alpha1
+kind: Model
+metadata:
+  name: qwen3-32b
+  namespace: default
+spec:
+  source: https://huggingface.co/Qwen/Qwen3-32B-GGUF/resolve/main/Qwen3-32B-Q4_K_M.gguf
+  format: gguf
+  quantization: Q4_K_M
+  hardware:
+    accelerator: cuda
+    gpu:
+      enabled: true
+      count: 2
+      vendor: nvidia
+      layers: -1  # All layers offloaded to GPU
+      memory: "16Gi"
+  resources:
+    cpu: "8"
+    memory: "24Gi"

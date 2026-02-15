@@ -1,0 +1,15 @@
+---
+# handlers/main.yml — macos_base role
+#
+# The macOS Application Firewall (socketfilterfw) applies changes immediately,
+# so a restart handler is not strictly required. This handler is provided for
+# completeness in case future tasks need to trigger a firewall reload.
+
+- name: Restart macOS Application Firewall
+  ansible.builtin.shell: |
+    /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+    /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
+  become: true
+  tags:
+    - base
+    - firewall

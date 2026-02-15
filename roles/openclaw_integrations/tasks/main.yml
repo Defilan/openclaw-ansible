@@ -1,0 +1,162 @@
+---
+# tasks/main.yml — openclaw_integrations role
+#
+# Sets and validates model failover and custom provider variables.
+# When a custom provider is enabled, also deploys a socat TCP proxy
+# (launchd) and a docker-compose.override.yml so the gateway container
+# can reach the LLM endpoint on the K8s cluster via the Mac Mini host.
+
+- name: Show configured model primary and fallbacks
+  ansible.builtin.debug:
+    msg: >-
+      Model primary: {{ openclaw_model_primary }}.
+      Fallbacks: {{ openclaw_model_fallbacks | join(', ') }}.
+  tags:
+    - integrations
+
+- name: Show custom provider configuration
+  ansible.builtin.debug:
+    msg: >-
+      Custom provider enabled — base URL: {{ openclaw_custom_provider_base_url }}
+  when: openclaw_custom_provider_enabled | bool
+  tags:
+    - integrations
+
+# ---- LLM proxy (socat) for Colima networking workaround --------------------
+# Uses a system LaunchDaemon (/Library/LaunchDaemons/) instead of a user
+# LaunchAgent because user agents require the GUI session bootstrap domain,
+# which is not accessible over SSH.
+
+- name: Unload old user LaunchAgent (if present)
+  ansible.builtin.command:
+    cmd: >-
+      launchctl unload
+      {{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.llm-proxy.plist
+  become: true
+  become_user: "{{ openclaw_user }}"
+  failed_when: false
+  changed_when: false
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Remove old user LaunchAgent plist (migrated to LaunchDaemon)
+  ansible.builtin.file:
+    path: "{{ openclaw_user_home }}/Library/LaunchAgents/com.openclaw.llm-proxy.plist"
+    state: absent
+  become: true
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Kill any manually-running socat on proxy port
+  ansible.builtin.shell:
+    cmd: >-
+      pkill -f 'socat.*TCP-LISTEN:{{ openclaw_llm_proxy_listen_port }}' || true
+  become: true
+  changed_when: false
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Deploy socat LLM proxy launchd plist (system daemon)
+  ansible.builtin.template:
+    src: com.openclaw.llm-proxy.plist.j2
+    dest: /Library/LaunchDaemons/com.openclaw.llm-proxy.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  become: true
+  register: _llm_proxy_plist
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Remove existing LLM proxy daemon from launchd
+  ansible.builtin.command:
+    cmd: launchctl bootout system/com.openclaw.llm-proxy
+  become: true
+  failed_when: false
+  changed_when: false
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Bootstrap LLM proxy launchd daemon
+  ansible.builtin.command:
+    cmd: launchctl bootstrap system /Library/LaunchDaemons/com.openclaw.llm-proxy.plist
+  become: true
+  register: _llm_proxy_load
+  changed_when: _llm_proxy_load.rc == 0
+  failed_when:
+    - _llm_proxy_load.rc != 0
+    - "'Input/output error' not in (_llm_proxy_load.stderr | default(''))"
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Ensure LLM proxy daemon is running
+  ansible.builtin.command:
+    cmd: launchctl kickstart -k system/com.openclaw.llm-proxy
+  become: true
+  changed_when: true
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Wait for socat to start listening
+  ansible.builtin.pause:
+    seconds: 2
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Verify socat proxy is listening
+  ansible.builtin.command:
+    cmd: >-
+      curl -sf --connect-timeout 3
+      http://127.0.0.1:{{ openclaw_llm_proxy_listen_port }}/v1/models
+  become: true
+  become_user: "{{ openclaw_user }}"
+  register: _proxy_check
+  changed_when: false
+  failed_when: false
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+- name: Display LLM proxy status
+  ansible.builtin.debug:
+    msg: >-
+      LLM proxy (socat): {{ 'listening on 127.0.0.1:' + (openclaw_llm_proxy_listen_port | string) + ' → ' + openclaw_llm_proxy_target
+        if (_proxy_check.rc | default(1)) == 0
+        else 'NOT REACHABLE — check launchd logs at /tmp/openclaw-llm-proxy.err' }}
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
+
+# ---- docker-compose.override.yml for host.docker.internal ------------------
+
+- name: Deploy docker-compose.override.yml for host networking
+  ansible.builtin.template:
+    src: docker-compose.override.yml.j2
+    dest: "{{ openclaw_install_dir }}/docker-compose.override.yml"
+    owner: "{{ openclaw_user }}"
+    mode: "0644"
+  become: true
+  become_user: "{{ openclaw_user }}"
+  notify: restart openclaw gateway
+  when: openclaw_llm_proxy_enabled | default(false) | bool
+  tags:
+    - integrations
+    - llm-proxy
