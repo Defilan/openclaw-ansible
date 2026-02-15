@@ -1,0 +1,35 @@
+---
+# Ansible-lint configuration for OpenClaw Ansible
+#
+# This project uses a shared variable namespace (openclaw_*) across roles
+# via the inventory, rather than per-role prefixes. Several rules are
+# skipped because they conflict with this architecture or with macOS
+# system administration patterns (dscl, launchctl, etc.).
+
+skip_list:
+  # Roles share variables via inventory using a common openclaw_ prefix.
+  # Renaming to per-role prefixes (openclaw_harden_, openclaw_deploy_, etc.)
+  # would break the single-inventory-file design.
+  - var-naming[no-role-prefix]
+
+  # Many macOS admin commands (dscl, launchctl, kickstart) are inherently
+  # state-changing with no idempotent module equivalent. Adding changed_when
+  # to every dscl call would require parsing macOS-specific output formats.
+  - no-changed-when
+
+  # Task names use lowercase for readability in some contexts (e.g.,
+  # "openclaw user" vs "Openclaw user").
+  - name[casing]
+
+  # curl | tic for terminfo installation has no Ansible module equivalent.
+  # The tic command only compiles terminfo descriptions, not arbitrary code.
+  - command-instead-of-module
+
+  # Shell pipes are used intentionally for UID generation (dscl | awk | sort)
+  # and terminfo installation (curl | tic).
+  - risky-shell-pipe
+
+  # ignore_errors is used with registered variables to handle expected
+  # failures gracefully (e.g., checking if a config file exists before
+  # reading it).
+  - ignore-errors

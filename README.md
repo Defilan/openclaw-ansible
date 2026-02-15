@@ -8,7 +8,7 @@ Ansible automation for deploying [OpenClaw](https://github.com/openclaw/openclaw
 - **macOS hardening**: firewall, stealth mode, disabled AirDrop/Bluetooth/AirPlay
 - **Docker-based OpenClaw deployment** via Colima (no Docker Desktop required)
 - **Security-first configuration**: gateway lockdown, auth tokens, consent mode, sandbox isolation
-- **Optional local LLM integration** via [LLMKube](https://github.com/llmkube/llmkube)
+- **Optional local LLM integration** via [LLMKube](https://github.com/defilantech/llmkube)
 - **Automated maintenance**: scheduled backups and health checks via launchd
 
 ## Prerequisites

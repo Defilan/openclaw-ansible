@@ -1,6 +1,6 @@
 # LLMKube Integration for OpenClaw
 
-These Kubernetes manifests deploy a local LLM (Qwen 3 32B) via [LLMKube](https://github.com/llmkube/llmkube) for use as OpenClaw's inference backend. This is entirely **optional** — OpenClaw works out of the box with cloud providers like Anthropic and OpenAI.
+These Kubernetes manifests deploy a local LLM (Qwen 3 32B) via [LLMKube](https://github.com/defilantech/llmkube) for use as OpenClaw's inference backend. This is entirely **optional** — OpenClaw works out of the box with cloud providers like Anthropic and OpenAI.
 
 ## Why Use a Local LLM?
 
@@ -12,7 +12,7 @@ These Kubernetes manifests deploy a local LLM (Qwen 3 32B) via [LLMKube](https:/
 ## Prerequisites
 
 - A Kubernetes cluster with GPU nodes (e.g., NVIDIA RTX 5060 Ti or better)
-- [LLMKube operator](https://github.com/llmkube/llmkube) installed on the cluster
+- [LLMKube operator](https://github.com/defilantech/llmkube) installed on the cluster
 - NVIDIA GPU Operator / device plugin configured
 
 ## Manifests
