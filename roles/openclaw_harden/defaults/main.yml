@@ -18,6 +18,16 @@ openclaw_gateway_port: 18789
 openclaw_gateway_mode: "local"
 openclaw_auth_token: "AUTO_GENERATE"
 
+# Commands the model is not allowed to call. Safe defaults for headless servers.
+openclaw_deny_commands:
+  - camera.snap
+  - camera.clip
+  - screen.record
+  - calendar.add
+  - contacts.add
+  - reminders.add
+  - cron.add
+
 # Valid values: "off", "on-miss", "always"
 openclaw_consent_mode: "always"
 

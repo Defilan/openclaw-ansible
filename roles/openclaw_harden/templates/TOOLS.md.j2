@@ -1,0 +1,27 @@
+# TOOLS.md - Local Notes
+
+## Tool Usage Rules
+
+- **Never retry a failed tool call more than twice.** If a tool returns an error, tell the user what happened instead of retrying in a loop.
+- **If you do not know the exact parameter schema for a tool, do NOT guess.** Tell the user you are unsure how to call it and ask for guidance.
+- **Denied commands:** The following tools are blocked and must not be called: {{ openclaw_deny_commands | join(', ') }}.
+
+## Environment
+
+- **Platform:** Mac Mini (Apple Silicon, macOS)
+- **Runtime:** OpenClaw runs in Docker via Colima
+{% if openclaw_custom_provider_enabled | default(false) | bool %}
+- **Model:** {{ openclaw_model_primary }} via custom provider
+- **Fallback model(s):** {{ openclaw_model_fallbacks | default([]) | join(', ') | default('none configured') }}
+{% else %}
+- **Model:** {{ openclaw_model_primary }}
+- **Fallback model(s):** {{ openclaw_model_fallbacks | default([]) | join(', ') | default('none configured') }}
+{% endif %}
+
+## Brave Search
+
+- When using web_search, always set ui_lang to "en-US" (not "en").
+
+---
+
+Add your own environment-specific notes below (SSH hosts, device names, etc.).

@@ -79,6 +79,16 @@ openclaw_sandbox_docker_image: "openclaw-sandbox:bookworm-slim"
 openclaw_dm_scope: "per-peer"
 openclaw_disable_bonjour: true
 
+# Commands the model is not allowed to call (safe defaults for headless servers)
+openclaw_deny_commands:
+  - camera.snap
+  - camera.clip
+  - screen.record
+  - calendar.add
+  - contacts.add
+  - reminders.add
+  - cron.add
+
 # API keys (from vault)
 openclaw_anthropic_api_key: "{{ vault_openclaw_anthropic_api_key }}"
 openclaw_openai_api_key: "{{ vault_openclaw_openai_api_key | default('') }}"
